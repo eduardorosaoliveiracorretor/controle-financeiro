@@ -1,18 +1,22 @@
 
 import React, { useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Home, CircleDollarSign, Menu, X, LogOut } from 'lucide-react';
+import { LayoutDashboard, Home, CircleDollarSign, Menu, X, LogOut, Users } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { BRANDING } from '../config/branding';
+import { useAuth } from './AuthProvider';
 
 const Sidebar: React.FC = () => {
   const [isOpen, setIsOpen] = React.useState(false);
   const location = useLocation();
   const navigate = useNavigate();
 
+  const { profile, isMaster } = useAuth();
+
   const links = [
     { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
     { to: '/unidades', icon: Home, label: 'Unidades' },
+    ...(isMaster ? [{ to: '/usuarios', icon: Users, label: 'Contadores' }] : []),
   ];
 
   const isActive = (path: string) => location.pathname === path;
@@ -99,7 +103,12 @@ const Sidebar: React.FC = () => {
           </nav>
         </div>
 
-        <div className="p-6 border-t bg-gray-50/50">
+        <div className="p-6 border-t bg-gray-50/50 space-y-3">
+          <div className="bg-white border border-gray-100 rounded-2xl px-4 py-3">
+            <p className="text-[10px] text-gray-400 uppercase font-black tracking-widest">Usuário logado</p>
+            <p className="text-sm font-bold text-gray-700 truncate">{profile?.full_name || 'Usuário'}</p>
+            <p className="text-[10px] font-black uppercase tracking-widest text-orange-600">{profile?.role || 'contador'}</p>
+          </div>
           <button
             onClick={handleSignOut}
             className="w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl text-red-500 hover:bg-red-50 transition-all font-bold text-sm"

@@ -24,6 +24,14 @@ export interface CategoriaDespesa {
   tipo: string;
 }
 
+
+export interface Profile {
+  id: string;
+  full_name: string;
+  role: 'master' | 'contador';
+  created_at?: string;
+}
+
 export interface CentroCusto {
   id: string;
   nome: string;
@@ -47,6 +55,7 @@ export interface Despesa {
   responsavel_id?: string;
   casas?: Casa;
   categorias_despesa?: CategoriaDespesa;
+  responsavel_profile?: Pick<Profile, "id" | "full_name" | "role">;
 }
 
 export interface AuditRecord {

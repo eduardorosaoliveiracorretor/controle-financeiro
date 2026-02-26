@@ -1,40 +1,16 @@
-
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { supabase } from './lib/supabaseClient';
 import Sidebar from './components/Sidebar';
 import Dashboard from './pages/Dashboard';
 import Unidades from './pages/Unidades';
 import DetalheDaCasa from './pages/DetalheDaCasa';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
+import UserManagement from './pages/UserManagement';
+import { useAuth } from './components/AuthProvider';
 
 const App: React.FC = () => {
-  const [session, setSession] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    // Initial session check
-    const initAuth = async () => {
-      try {
-        const { data: { session: initialSession } } = await supabase.auth.getSession();
-        setSession(initialSession);
-      } catch (error) {
-        console.error("Erro ao verificar sessão inicial:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    initAuth();
-
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
+  const { session, loading, isMaster } = useAuth();
 
   if (loading) {
     return (
@@ -59,6 +35,7 @@ const App: React.FC = () => {
                   <Route path="/" element={<Dashboard />} />
                   <Route path="/unidades" element={<Unidades />} />
                   <Route path="/unidade/:id" element={<DetalheDaCasa />} />
+                  <Route path="/usuarios" element={isMaster ? <UserManagement /> : <Navigate to="/" />} />
                   <Route path="*" element={<Navigate to="/" />} />
                 </Routes>
               </div>

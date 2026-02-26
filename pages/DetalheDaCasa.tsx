@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
-import { Casa, Despesa } from '../types';
+import { Casa, Despesa, Profile } from '../types';
 import { 
   ArrowLeft, 
   Plus, 
@@ -36,10 +36,13 @@ import ExpenseModal from '../components/ExpenseModal';
 import AuditModal from '../components/AuditModal';
 import { formatCurrency } from '../utils/normalization';
 import { BRANDING } from '../config/branding';
+import { useAuth } from '../components/AuthProvider';
+import { canEditExpense } from '../config/rbac';
 
 const DetalheDaCasa: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { user, profile, isMaster } = useAuth();
   const [casa, setCasa] = useState<Casa | null>(null);
   const [despesas, setDespesas] = useState<Despesa[]>([]);
   const [loading, setLoading] = useState(true);
@@ -53,6 +56,7 @@ const DetalheDaCasa: React.FC = () => {
   // Date filter states
   const [startDate, setStartDate] = useState<string>('');
   const [endDate, setEndDate] = useState<string>('');
+  const [responsavelFilter, setResponsavelFilter] = useState<string>('todos');
 
   // Actions states
   const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
@@ -81,7 +85,7 @@ const DetalheDaCasa: React.FC = () => {
     setLoading(true);
     const [casaRes, despesasRes] = await Promise.all([
       supabase.from('casas').select('*, setores(*)').eq('id', id).single(),
-      supabase.from('despesas').select('*, categorias_despesa(*)').eq('casa_id', id).order('data_lancamento', { ascending: true })
+      supabase.from('despesas').select('*, categorias_despesa(*), responsavel_profile:profiles!despesas_responsavel_id_fkey(id, full_name, role)').eq('casa_id', id).order('data_lancamento', { ascending: true })
     ]);
 
     if (casaRes.error) {
@@ -125,9 +129,24 @@ const DetalheDaCasa: React.FC = () => {
       const date = (d.data_da_compra || d.data_lancamento.split('T')[0]);
       if (startDate && date < startDate) return false;
       if (endDate && date > endDate) return false;
+      if (responsavelFilter !== 'todos') {
+        const responsibleId = d.responsavel_id || d.user_id || '';
+        if (responsibleId !== responsavelFilter) return false;
+      }
       return true;
     });
-  }, [despesas, startDate, endDate]);
+  }, [despesas, startDate, endDate, responsavelFilter]);
+
+  const responsavelOptions = useMemo(() => {
+    const map = new Map<string, string>();
+    despesas.forEach((d) => {
+      const id = d.responsavel_id || d.user_id;
+      if (!id) return;
+      const profileName = (d as any).responsavel_profile?.full_name;
+      map.set(id, profileName || (id === user?.id ? (profile?.full_name || user?.email || 'Usuário') : 'Usuário'));
+    });
+    return Array.from(map.entries()).map(([id, name]) => ({ id, name }));
+  }, [despesas, profile, user]);
 
   const totalPeriodo = filteredDespesas.reduce((acc, curr) => acc + Number(curr.valor), 0);
   const isDateInvalid = startDate && endDate && endDate < startDate;
@@ -463,6 +482,12 @@ const DetalheDaCasa: React.FC = () => {
   };
 
   const handleEditClick = (d: Despesa) => {
+    if (!canEditExpense(profile?.role, user?.id, d)) {
+      alert('Você só pode editar lançamentos de sua autoria.');
+      setMenuOpenId(null);
+      return;
+    }
+
     setExpenseToEdit(d);
     setMenuOpenId(null);
   };
@@ -622,6 +647,21 @@ const DetalheDaCasa: React.FC = () => {
                 className={`w-full px-4 py-3 bg-gray-50 border rounded-2xl focus:ring-2 focus:ring-orange-500 outline-none font-bold text-sm transition-all shadow-sm ${isDateInvalid ? 'border-red-300 ring-red-100 ring-2' : 'border-gray-200'}`} 
               />
             </div>
+            <div className="space-y-1.5 sm:col-span-2">
+              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-1.5">
+                <Filter size={12} /> Responsável
+              </label>
+              <select
+                value={responsavelFilter}
+                onChange={(e) => setResponsavelFilter(e.target.value)}
+                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-orange-500 outline-none font-bold text-sm transition-all shadow-sm"
+              >
+                <option value="todos">Todos os responsáveis</option>
+                {responsavelOptions.map((option) => (
+                  <option key={option.id} value={option.id}>{option.name}</option>
+                ))}
+              </select>
+            </div>
             {isDateInvalid && (
               <p className="col-span-1 sm:col-span-2 text-[10px] font-bold text-red-500 mt-1 flex items-center gap-1">
                 <AlertTriangle size={12} /> Período inválido: data final &lt; data inicial.
@@ -641,6 +681,10 @@ const DetalheDaCasa: React.FC = () => {
                <div className="flex justify-between items-center text-xs">
                  <span className="text-gray-500 font-medium">Gasto no período:</span>
                  <span className="font-black text-orange-600">{formatCurrency(totalPeriodo)}</span>
+               </div>
+               <div className="flex justify-between items-center text-xs">
+                 <span className="text-gray-500 font-medium">Responsável:</span>
+                 <span className="font-black text-gray-700 truncate max-w-[130px] text-right">{responsavelFilter === 'todos' ? 'Todos' : responsavelOptions.find(r => r.id === responsavelFilter)?.name || '—'}</span>
                </div>
              </div>
           </div>
@@ -715,6 +759,7 @@ const DetalheDaCasa: React.FC = () => {
                     <p className="text-[10px] text-gray-400 font-medium">
                        {d.quantidade} un. x {formatCurrency(d.valor_unitario)}
                     </p>
+                    <p className="text-[10px] text-gray-400 mt-1">Responsável: {(d as any).responsavel_profile?.full_name || d.responsavel_id || d.user_id || '—'}</p>
                     {d.observacao && <p className="text-[10px] text-gray-400 mt-1 italic max-w-xs truncate">{d.observacao}</p>}
                   </td>
                   <td className="px-6 py-4">

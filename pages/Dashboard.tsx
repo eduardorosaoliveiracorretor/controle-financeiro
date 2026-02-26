@@ -43,13 +43,10 @@ const Dashboard: React.FC = () => {
     try {
       setLoading(true);
       
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
       const [despesasRes, casasRes, setoresRes] = await Promise.all([
-        supabase.from('despesas').select('*, casas(nome_casa, setor_id), categorias_despesa(nome)').eq('user_id', user.id).order('data_lancamento', { ascending: false }),
-        supabase.from('casas').select('*, setores(nome)').eq('user_id', user.id),
-        supabase.from('setores').select('*').eq('user_id', user.id)
+        supabase.from('despesas').select('*, casas(nome_casa, setor_id), categorias_despesa(nome)').order('data_lancamento', { ascending: false }),
+        supabase.from('casas').select('*, setores(nome)'),
+        supabase.from('setores').select('*')
       ]);
 
       if (despesasRes.error) throw despesasRes.error;
