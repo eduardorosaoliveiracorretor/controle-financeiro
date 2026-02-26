@@ -23,7 +23,17 @@ interface AuthContextValue {
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 const deriveName = (user: User) => user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0] || 'Usuário';
-const deriveRole = (user: User): UserRole => (user.email?.toLowerCase().includes('master') ? 'master' : 'contador');
+const deriveRole = (user: User): UserRole => {
+  const metadataRole = user.user_metadata?.role;
+  if (metadataRole === 'master' || metadataRole === 'contador') return metadataRole;
+  return user.email?.toLowerCase().includes('master') ? 'master' : 'contador';
+};
+
+const fallbackProfile = (user: User): Profile => ({
+  id: user.id,
+  full_name: deriveName(user),
+  role: deriveRole(user)
+});
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [session, setSession] = useState<Session | null>(null);
@@ -31,21 +41,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
 
   const ensureProfile = async (user: User) => {
-    const payload = {
-      id: user.id,
-      full_name: deriveName(user),
-      role: deriveRole(user)
-    };
+    const payload = fallbackProfile(user);
 
-    await supabase.from('profiles').upsert(payload, { onConflict: 'id' });
+    try {
+      const upsertResult = await supabase.from('profiles').upsert(payload, { onConflict: 'id' });
+      if (upsertResult.error) {
+        console.warn('Falha no upsert de profiles, seguindo com fallback local:', upsertResult.error.message);
+        setProfile(payload);
+        return;
+      }
 
-    const { data } = await supabase
-      .from('profiles')
-      .select('id, full_name, role, created_at')
-      .eq('id', user.id)
-      .single();
+      const profileResult = await supabase
+        .from('profiles')
+        .select('id, full_name, role, created_at')
+        .eq('id', user.id)
+        .single();
 
-    if (data) {
+      if (profileResult.error || !profileResult.data) {
+        console.warn('Falha ao buscar profile, seguindo com fallback local:', profileResult.error?.message);
+        setProfile(payload);
+        return;
+      }
+
+      const data = profileResult.data as Profile;
+
       if (!data.full_name && typeof window !== 'undefined') {
         const informedName = window.prompt('Informe seu nome para concluir seu perfil:', deriveName(user))?.trim();
         if (informedName) {
@@ -53,26 +72,41 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           data.full_name = informedName;
         }
       }
-      setProfile(data as Profile);
+
+      setProfile(data);
+    } catch (error) {
+      console.error('Erro ao garantir profile. Aplicando fallback para não travar app:', error);
+      setProfile(payload);
     }
   };
 
   const refreshProfile = async () => {
-    const user = session?.user;
-    if (!user) {
+    const currentUser = session?.user;
+    if (!currentUser) {
       setProfile(null);
       return;
     }
-    await ensureProfile(user);
+
+    await ensureProfile(currentUser);
   };
 
   useEffect(() => {
     const init = async () => {
-      const { data } = await supabase.auth.getSession();
-      const currentSession = data.session;
-      setSession(currentSession);
-      if (currentSession?.user) await ensureProfile(currentSession.user);
-      setLoading(false);
+      try {
+        const { data } = await supabase.auth.getSession();
+        const currentSession = data.session;
+        setSession(currentSession);
+
+        if (currentSession?.user) {
+          await ensureProfile(currentSession.user);
+        } else {
+          setProfile(null);
+        }
+      } catch (error) {
+        console.error('Erro ao inicializar sessão/auth provider:', error);
+      } finally {
+        setLoading(false);
+      }
     };
 
     init();
@@ -84,6 +118,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       } else {
         setProfile(null);
       }
+      setLoading(false);
     });
 
     return () => subscription.unsubscribe();
