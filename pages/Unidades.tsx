@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { Casa, Setor } from '../types';
-import { Plus, Search, MapPin, Calendar, CheckCircle, ChevronRight, Home, Settings2, Loader2, X, CheckCircle2, Trash2 } from 'lucide-react';
+import { Plus, Search, MapPin, Calendar, CheckCircle, ChevronRight, Home, Settings2, Loader2, X, CheckCircle2, Trash2, Pencil } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import SectorModal from '../components/SectorModal';
 import { formatCurrency } from '../utils/normalization';
@@ -20,6 +20,8 @@ const Unidades: React.FC = () => {
   const [statusLoading, setStatusLoading] = useState(false);
   const [casaToDelete, setCasaToDelete] = useState<Casa | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
+  const [casaToEdit, setCasaToEdit] = useState<Casa | null>(null);
+  const [submitLoading, setSubmitLoading] = useState(false);
 
   // Form State
   const [formData, setFormData] = useState({
@@ -49,31 +51,66 @@ const Unidades: React.FC = () => {
     setLoading(false);
   };
 
+  const resetForm = () => {
+    setFormData({ nome_casa: '', setor_id: '', orcamento_previsto: '', data_inicio_obra: '', status: 'Planejamento' });
+  };
+
+  const handleOpenCreate = () => {
+    setCasaToEdit(null);
+    resetForm();
+    setShowModal(true);
+  };
+
+  const handleOpenEdit = (casa: Casa) => {
+    setCasaToEdit(casa);
+    setFormData({
+      nome_casa: casa.nome_casa,
+      setor_id: casa.setor_id,
+      orcamento_previsto: String(casa.orcamento_previsto),
+      data_inicio_obra: casa.data_inicio_obra,
+      status: casa.status
+    });
+    setShowModal(true);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (submitLoading) return;
+
     const { data: { user } } = await supabase.auth.getUser();
-    
+
     if (!user) {
       alert('Você precisa estar logado.');
       return;
     }
 
-    const { error } = await supabase.from('casas').insert([{
-      user_id: user.id,
+    setSubmitLoading(true);
+
+    const payload = {
       nome_casa: formData.nome_casa,
       setor_id: formData.setor_id,
       orcamento_previsto: parseFloat(formData.orcamento_previsto),
       data_inicio_obra: formData.data_inicio_obra,
       status: formData.status
-    }]);
+    };
+
+    const query = casaToEdit
+      ? supabase.from('casas').update(payload).eq('id', casaToEdit.id)
+      : supabase.from('casas').insert([{ user_id: user.id, ...payload }]);
+
+    const { error } = await query;
 
     if (error) {
-      alert(`Erro ao cadastrar unidade: ${error.message}`);
-    } else {
-      setShowModal(false);
-      fetchData();
-      setFormData({ nome_casa: '', setor_id: '', orcamento_previsto: '', data_inicio_obra: '', status: 'Planejamento' });
+      alert(`Erro ao ${casaToEdit ? 'atualizar' : 'cadastrar'} unidade: ${error.message}`);
+      setSubmitLoading(false);
+      return;
     }
+
+    setShowModal(false);
+    setCasaToEdit(null);
+    resetForm();
+    await fetchData();
+    setSubmitLoading(false);
   };
 
   const handleUpdateStatus = async (casa: Casa, novoStatus: Casa['status']) => {
@@ -139,8 +176,8 @@ const Unidades: React.FC = () => {
           <p className="text-gray-500">Gerencie seu portfólio de imóveis e obras.</p>
         </div>
         <button 
-          onClick={() => setShowModal(true)}
-          className="bg-orange-500 text-white px-6 py-3 rounded-xl font-bold shadow-lg shadow-orange-200 hover:bg-orange-600 transition-all flex items-center justify-center gap-2"
+          onClick={handleOpenCreate}
+          className="bg-gradient-to-r from-orange-500 to-orange-600 text-white px-6 py-3 rounded-xl font-bold shadow-lg shadow-orange-200 hover:shadow-orange-300 hover:scale-[1.01] transition-all flex items-center justify-center gap-2"
         >
           <Plus size={20} />
           Nova Unidade
@@ -154,11 +191,11 @@ const Unidades: React.FC = () => {
           {casas.map((casa) => (
             <div 
               key={casa.id} 
-              className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-xl transition-all group overflow-hidden"
+              className="bg-white/95 rounded-2xl border border-gray-100 shadow-sm hover:shadow-xl hover:-translate-y-0.5 transition-all group overflow-hidden backdrop-blur"
             >
               <div className="p-6 cursor-pointer" onClick={() => navigate(`/unidade/${casa.id}`)}>
                 <div className="flex justify-between items-start mb-4">
-                  <div className="bg-orange-50 text-orange-600 p-2 rounded-lg">
+                  <div className="bg-gradient-to-br from-orange-50 to-orange-100 text-orange-600 p-2.5 rounded-xl shadow-inner">
                     <Home size={24} />
                   </div>
                   <div className="flex items-center gap-2">
@@ -171,6 +208,17 @@ const Unidades: React.FC = () => {
                     >
                       {casa.status}
                       <Settings2 size={10} />
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleOpenEdit(casa);
+                      }}
+                      className="p-2 rounded-lg border border-blue-100 text-blue-500 hover:bg-blue-50 transition-all active:scale-95"
+                      title="Editar unidade"
+                      aria-label="Editar unidade"
+                    >
+                      <Pencil size={14} />
                     </button>
                     <button
                       onClick={(e) => {
@@ -196,7 +244,7 @@ const Unidades: React.FC = () => {
                 </div>
               </div>
               <div 
-                className="px-6 py-4 border-t bg-gray-50 flex items-center justify-between cursor-pointer"
+                className="px-6 py-4 border-t bg-gradient-to-r from-gray-50 to-white flex items-center justify-between cursor-pointer"
                 onClick={() => navigate(`/unidade/${casa.id}`)}
               >
                 <div>
@@ -213,7 +261,7 @@ const Unidades: React.FC = () => {
           {casas.length === 0 && (
             <div className="col-span-full py-20 bg-gray-50 border-2 border-dashed border-gray-200 rounded-3xl text-center">
               <p className="text-gray-400">Nenhuma unidade cadastrada ainda.</p>
-              <button onClick={() => setShowModal(true)} className="text-orange-500 font-bold mt-2">Clique aqui para começar</button>
+              <button onClick={handleOpenCreate} className="text-orange-500 font-bold mt-2">Clique aqui para começar</button>
             </div>
           )}
         </div>
@@ -295,8 +343,8 @@ const Unidades: React.FC = () => {
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-end md:items-center justify-center z-[120] p-0 md:p-4 overflow-hidden">
           <div className="mobile-modal bg-white rounded-t-3xl md:rounded-3xl shadow-2xl w-full max-w-[min(94vw,520px)] md:max-w-2xl flex flex-col overflow-hidden animate-in slide-in-from-bottom md:zoom-in duration-200">
             <div className="flex items-center justify-between p-4 md:p-6 border-b shrink-0 bg-white">
-              <h3 className="text-lg md:text-xl font-bold text-gray-800 truncate">Cadastrar Nova Unidade</h3>
-              <button onClick={() => setShowModal(false)} className="p-2 text-gray-400 hover:text-gray-600 transition-colors">
+              <h3 className="text-lg md:text-xl font-bold text-gray-800 truncate">{casaToEdit ? 'Editar Unidade' : 'Cadastrar Nova Unidade'}</h3>
+              <button onClick={() => { setShowModal(false); setCasaToEdit(null); resetForm(); }} className="p-2 text-gray-400 hover:text-gray-600 transition-colors">
                 <X size={24} />
               </button>
             </div>
@@ -379,16 +427,17 @@ const Unidades: React.FC = () => {
               <div className="mt-8 md:mt-10 flex flex-col md:flex-row gap-3 md:gap-4 shrink-0">
                 <button 
                   type="button" 
-                  onClick={() => setShowModal(false)}
+                  onClick={() => { setShowModal(false); setCasaToEdit(null); resetForm(); }}
                   className="w-full md:flex-1 px-6 py-3.5 md:py-4 border border-gray-200 text-gray-600 rounded-xl font-bold hover:bg-gray-50 transition-colors text-sm md:text-base order-2 md:order-1"
                 >
                   Cancelar
                 </button>
                 <button 
                   type="submit"
-                  className="w-full md:flex-1 px-6 py-3.5 md:py-4 bg-orange-500 text-white rounded-xl font-bold hover:bg-orange-600 transition-all shadow-lg shadow-orange-100 text-sm md:text-base order-1 md:order-2"
+                  disabled={submitLoading}
+                  className="w-full md:flex-1 px-6 py-3.5 md:py-4 bg-gradient-to-r from-orange-500 to-orange-600 text-white rounded-xl font-bold hover:from-orange-600 hover:to-orange-700 transition-all shadow-lg shadow-orange-100 text-sm md:text-base order-1 md:order-2 disabled:opacity-70"
                 >
-                  Criar Unidade
+                  {submitLoading ? 'Salvando...' : casaToEdit ? 'Salvar Alterações' : 'Criar Unidade'}
                 </button>
               </div>
             </form>
