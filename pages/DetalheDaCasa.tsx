@@ -191,6 +191,53 @@ const DetalheDaCasa: React.FC = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Usuário não autenticado");
 
+      const currentUserName = user.user_metadata?.name || user.user_metadata?.full_name || user.email?.split('@')[0] || 'Usuário';
+
+      const getResponsibleNames = async () => {
+        const map = new Map<string, string>();
+        map.set(user.id, currentUserName);
+
+        const ids = Array.from(new Set(filteredDespesas
+          .map((d) => d.responsavel_id || d.user_id)
+          .filter((value): value is string => Boolean(value))));
+
+        if (ids.length === 0) return map;
+
+        const profileQueries: Array<{ table: string; fields: string[] }> = [
+          { table: 'profiles', fields: ['full_name', 'nome', 'name', 'email'] },
+          { table: 'usuarios', fields: ['nome', 'name', 'email'] },
+        ];
+
+        for (const query of profileQueries) {
+          try {
+            const { data, error } = await supabase
+              .from(query.table as any)
+              .select(['id', ...query.fields].join(','))
+              .in('id', ids);
+
+            if (error || !data) continue;
+
+            for (const row of data as any[]) {
+              const resolvedName = row.full_name || row.nome || row.name || row.email;
+              if (row.id && resolvedName) {
+                map.set(row.id, resolvedName);
+              }
+            }
+          } catch {
+            // tabela pode não existir no projeto atual
+          }
+        }
+
+        return map;
+      };
+
+      const responsibleNames = await getResponsibleNames();
+      const resolveResponsibleName = (despesa: Despesa) => {
+        const responsibleId = despesa.responsavel_id || despesa.user_id;
+        if (!responsibleId) return 'Usuário não identificado';
+        return responsibleNames.get(responsibleId) || (responsibleId === user.id ? currentUserName : 'Usuário não identificado');
+      };
+
       const doc = new jsPDF();
       const dateNow = new Date();
       const timestamp = dateNow.toLocaleString('pt-BR');
@@ -220,18 +267,20 @@ const DetalheDaCasa: React.FC = () => {
           valor_total: d.valor,
           observacao: d.observacao || '-',
           nota_fiscal_url: d.nota_fiscal_url || '-',
-          responsavel_id: d.responsavel_id || d.user_id || '-',
+          responsavel_nome: resolveResponsibleName(d),
         }))
       };
       const fullHash = await generateIntegrityHash(auditPayload);
       const displayHash = fullHash.substring(0, 24) + "...";
 
       // 1. Cabeçalho Corporativo
-      doc.setFillColor(249, 115, 22);
+      doc.setFillColor(17, 24, 39);
       doc.rect(0, 0, 210, 15, 'F');
+      doc.setFillColor(249, 115, 22);
+      doc.rect(0, 15, 210, 1.5, 'F');
 
       doc.setFontSize(20);
-      doc.setTextColor(249, 115, 22);
+      doc.setTextColor(17, 24, 39);
       doc.setFont('helvetica', 'bold');
       doc.text('Extrato de Despesas', 14, 30);
       
@@ -242,8 +291,8 @@ const DetalheDaCasa: React.FC = () => {
       doc.text(BRANDING.companyName, 14, 41);
 
       // 2. Metadados do Documento (Caixa de Informações)
-      doc.setDrawColor(240);
-      doc.setFillColor(252, 252, 252);
+      doc.setDrawColor(253, 186, 116);
+      doc.setFillColor(255, 251, 235);
       doc.roundedRect(14, 50, 182, 35, 3, 3, 'FD');
 
       doc.setFontSize(9);
@@ -257,7 +306,7 @@ const DetalheDaCasa: React.FC = () => {
       doc.text(`Setor: ${casa.setores?.nome || 'N/A'}`, 20, 70);
       doc.text(`Período: ${startDate ? new Date(startDate).toLocaleDateString('pt-BR') : 'Início'} a ${endDate ? new Date(endDate).toLocaleDateString('pt-BR') : 'Hoje'}`, 20, 75);
 
-      doc.text(`Usuário autenticado: ${user.email}`, 110, 65);
+      doc.text(`Usuário autenticado: ${currentUserName}`, 110, 65);
       doc.text(`Data Emissão: ${timestamp}`, 110, 70);
       doc.text(`Lançamentos: ${filteredDespesas.length} registros`, 110, 75);
 
@@ -270,14 +319,14 @@ const DetalheDaCasa: React.FC = () => {
         formatCurrency(d.valor_unitario),
         formatCurrency(d.valor),
         d.categorias_despesa?.nome || '-',
-        d.responsavel_id || d.user_id || '-',
+        resolveResponsibleName(d),
         d.nota_fiscal_url || '-',
         d.observacao || ''
       ]);
 
       autoTable(doc, {
         startY: 95,
-        head: [['Data Lanç.', 'Data Compra', 'Descrição', 'Qtd', 'Unit', 'Total', 'Categoria', 'Usuário', 'NF', 'Observação']],
+        head: [['Data Lanç.', 'Data Compra', 'Descrição', 'Qtd', 'Unit', 'Total', 'Categoria', 'Lançado por', 'NF', 'Observação']],
         body: tableData,
         headStyles: { 
           fillColor: [249, 115, 22],
@@ -287,10 +336,11 @@ const DetalheDaCasa: React.FC = () => {
         },
         bodyStyles: { 
           fontSize: 7,
-          textColor: [50, 50, 50]
+          textColor: [55, 65, 81],
+          cellPadding: 1.8
         },
         alternateRowStyles: {
-          fillColor: [250, 250, 250]
+          fillColor: [249, 250, 251]
         },
         columnStyles: {
           0: { cellWidth: 15, halign: 'center' },
@@ -304,14 +354,14 @@ const DetalheDaCasa: React.FC = () => {
         },
         foot: [['', '', 'TOTAL NO PERÍODO', '', '', formatCurrency(totalPeriodo), '', '', '', '']],
         footStyles: { 
-          fillColor: [255, 255, 255], 
-          textColor: [249, 115, 22], 
+          fillColor: [255, 247, 237], 
+          textColor: [194, 65, 12], 
           fontStyle: 'bold',
           fontSize: 9,
           lineColor: [249, 115, 22],
           lineWidth: 0.1
         },
-        theme: 'striped',
+        theme: 'grid',
         margin: { bottom: 30 }
       });
 
