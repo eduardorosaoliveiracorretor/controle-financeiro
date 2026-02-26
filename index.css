@@ -1,0 +1,62 @@
+:root {
+  --app-safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+html,
+body {
+  height: 100%;
+}
+
+#root {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  overflow-x: hidden;
+  overscroll-behavior-y: none;
+}
+
+.app-shell {
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+.app-scroll-area {
+  min-height: 100vh;
+  min-height: 100dvh;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+.auth-shell {
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+.mobile-modal {
+  max-height: 92vh;
+  max-height: 92dvh;
+}
+
+.mobile-modal-content {
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: calc(1rem + var(--app-safe-bottom));
+}
+
+.mobile-form-control {
+  width: 100%;
+  min-width: 0;
+}
+
+@media (max-width: 768px) {
+  input,
+  select,
+  textarea,
+  button {
+    font-size: 16px;
+  }
+}

@@ -225,8 +225,8 @@ const Unidades: React.FC = () => {
       )}
 
       {showModal && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[120] p-4 overflow-hidden">
-          <div className="bg-white rounded-2xl md:rounded-3xl shadow-2xl w-full max-w-[min(94vw,520px)] md:max-w-2xl max-h-[92vh] flex flex-col overflow-hidden animate-in zoom-in duration-200">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-end md:items-center justify-center z-[120] p-0 md:p-4 overflow-hidden">
+          <div className="mobile-modal bg-white rounded-t-3xl md:rounded-3xl shadow-2xl w-full max-w-[min(94vw,520px)] md:max-w-2xl flex flex-col overflow-hidden animate-in slide-in-from-bottom md:zoom-in duration-200">
             <div className="flex items-center justify-between p-4 md:p-6 border-b shrink-0 bg-white">
               <h3 className="text-lg md:text-xl font-bold text-gray-800 truncate">Cadastrar Nova Unidade</h3>
               <button onClick={() => setShowModal(false)} className="p-2 text-gray-400 hover:text-gray-600 transition-colors">
@@ -234,7 +234,7 @@ const Unidades: React.FC = () => {
               </button>
             </div>
             
-            <form onSubmit={handleSubmit} className="p-4 md:p-8 overflow-y-auto flex-1">
+            <form onSubmit={handleSubmit} className="mobile-modal-content p-4 md:p-8 flex-1">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
                 <div className="md:col-span-2">
                   <label className="block text-sm font-bold text-gray-700 mb-1.5 white-space-normal leading-tight">Nome da Unidade / Casa</label>
@@ -244,7 +244,7 @@ const Unidades: React.FC = () => {
                     value={formData.nome_casa}
                     onChange={(e) => setFormData({...formData, nome_casa: e.target.value})}
                     placeholder="Ex: Casa Jardim das Tulipas"
-                    className="w-full min-w-0 px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 outline-none transition-all text-sm md:text-base"
+                    className="mobile-form-control px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 outline-none transition-all text-sm md:text-base"
                   />
                 </div>
 
@@ -263,7 +263,7 @@ const Unidades: React.FC = () => {
                     required
                     value={formData.setor_id}
                     onChange={(e) => setFormData({...formData, setor_id: e.target.value})}
-                    className="w-full min-w-0 px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 outline-none text-sm md:text-base"
+                    className="mobile-form-control px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 outline-none text-sm md:text-base"
                   >
                     <option value="">Selecione...</option>
                     {setores.map(s => <option key={s.id} value={s.id}>{s.nome}</option>)}
@@ -278,7 +278,7 @@ const Unidades: React.FC = () => {
                     value={formData.orcamento_previsto}
                     onChange={(e) => setFormData({...formData, orcamento_previsto: e.target.value})}
                     placeholder="0,00"
-                    className="w-full min-w-0 px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 outline-none text-sm md:text-base"
+                    className="mobile-form-control px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 outline-none text-sm md:text-base"
                   />
                 </div>
 
@@ -289,7 +289,7 @@ const Unidades: React.FC = () => {
                     required
                     value={formData.data_inicio_obra}
                     onChange={(e) => setFormData({...formData, data_inicio_obra: e.target.value})}
-                    className="w-full min-w-0 px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 outline-none text-sm md:text-base"
+                    className="mobile-form-control px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 outline-none text-sm md:text-base"
                   />
                 </div>
 
@@ -299,7 +299,7 @@ const Unidades: React.FC = () => {
                     required
                     value={formData.status}
                     onChange={(e) => setFormData({...formData, status: e.target.value as any})}
-                    className="w-full min-w-0 px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 outline-none text-sm md:text-base"
+                    className="mobile-form-control px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 outline-none text-sm md:text-base"
                   >
                     <option value="Planejamento">Planejamento</option>
                     <option value="Em Obra">Em Obra</option>

@@ -43,6 +43,8 @@ export interface Despesa {
   observacao?: string;
   nota_fiscal_url?: string;
   data_lancamento: string;
+  data_da_compra?: string;
+  responsavel_id?: string;
   casas?: Casa;
   categorias_despesa?: CategoriaDespesa;
 }
