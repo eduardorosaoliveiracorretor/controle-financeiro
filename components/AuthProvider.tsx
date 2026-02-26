@@ -91,37 +91,48 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   useEffect(() => {
+    let isMounted = true;
+
     const init = async () => {
       try {
         const { data } = await supabase.auth.getSession();
         const currentSession = data.session;
+        if (!isMounted) return;
+
         setSession(currentSession);
+        setLoading(false);
 
         if (currentSession?.user) {
-          await ensureProfile(currentSession.user);
+          void ensureProfile(currentSession.user);
         } else {
           setProfile(null);
         }
       } catch (error) {
         console.error('Erro ao inicializar sessão/auth provider:', error);
       } finally {
-        setLoading(false);
+        if (isMounted) setLoading(false);
       }
     };
 
     init();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, newSession) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, newSession) => {
+      if (!isMounted) return;
+
       setSession(newSession);
+      setLoading(false);
+
       if (newSession?.user) {
-        await ensureProfile(newSession.user);
+        void ensureProfile(newSession.user);
       } else {
         setProfile(null);
       }
-      setLoading(false);
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      isMounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   const value = useMemo(() => ({
