@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { Casa, Setor } from '../types';
-import { Plus, Search, MapPin, Calendar, CheckCircle, ChevronRight, Home, Settings2, Loader2, X, CheckCircle2 } from 'lucide-react';
+import { Plus, Search, MapPin, Calendar, CheckCircle, ChevronRight, Home, Settings2, Loader2, X, CheckCircle2, Trash2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import SectorModal from '../components/SectorModal';
 import { formatCurrency } from '../utils/normalization';
@@ -18,6 +18,8 @@ const Unidades: React.FC = () => {
   // Status edit state
   const [statusEditingCasa, setStatusEditingCasa] = useState<Casa | null>(null);
   const [statusLoading, setStatusLoading] = useState(false);
+  const [casaToDelete, setCasaToDelete] = useState<Casa | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   // Form State
   const [formData, setFormData] = useState({
@@ -90,6 +92,27 @@ const Unidades: React.FC = () => {
     setStatusLoading(false);
   };
 
+
+  const handleDeleteCasa = async () => {
+    if (!casaToDelete || deleteLoading) return;
+
+    setDeleteLoading(true);
+    const { error } = await supabase
+      .from('casas')
+      .delete()
+      .eq('id', casaToDelete.id);
+
+    if (error) {
+      alert(`Erro ao excluir unidade: ${error.message}`);
+      setDeleteLoading(false);
+      return;
+    }
+
+    setCasas((prev) => prev.filter((c) => c.id !== casaToDelete.id));
+    setCasaToDelete(null);
+    setDeleteLoading(false);
+  };
+
   const handleNewSectorSuccess = (id: string) => {
     supabase.from('setores').select('*').order('nome').then(({ data }) => {
       setSetores(data || []);
@@ -138,16 +161,29 @@ const Unidades: React.FC = () => {
                   <div className="bg-orange-50 text-orange-600 p-2 rounded-lg">
                     <Home size={24} />
                   </div>
-                  <button 
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setStatusEditingCasa(casa);
-                    }}
-                    className={`flex items-center gap-1 text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-lg border transition-all hover:scale-105 active:scale-95 ${getStatusBadgeClass(casa.status)}`}
-                  >
-                    {casa.status}
-                    <Settings2 size={10} />
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setStatusEditingCasa(casa);
+                      }}
+                      className={`flex items-center gap-1 text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-lg border transition-all hover:scale-105 active:scale-95 ${getStatusBadgeClass(casa.status)}`}
+                    >
+                      {casa.status}
+                      <Settings2 size={10} />
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setCasaToDelete(casa);
+                      }}
+                      className="p-2 rounded-lg border border-red-100 text-red-500 hover:bg-red-50 transition-all active:scale-95"
+                      title="Excluir unidade"
+                      aria-label="Excluir unidade"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
                 </div>
                 <h3 className="text-xl font-bold text-gray-800 group-hover:text-orange-600 transition-colors">{casa.nome_casa}</h3>
                 <div className="mt-4 space-y-2">
@@ -220,6 +256,37 @@ const Unidades: React.FC = () => {
                 Atualizando...
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+
+      {casaToDelete && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center z-[120] p-0 sm:p-4 overflow-hidden">
+          <div className="mobile-modal bg-white rounded-t-3xl sm:rounded-3xl p-4 sm:p-6 w-full max-w-sm shadow-2xl animate-in slide-in-from-bottom sm:zoom-in duration-300">
+            <div className="w-14 h-14 bg-red-100 text-red-600 rounded-2xl flex items-center justify-center mb-5 mx-auto">
+              <Trash2 size={28} />
+            </div>
+            <h3 className="text-lg font-black text-gray-800 text-center mb-2">Excluir unidade?</h3>
+            <p className="text-gray-500 text-sm text-center mb-6">
+              Esta ação removerá a unidade <span className="font-bold text-gray-800">"{casaToDelete.nome_casa}"</span>.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <button
+                disabled={deleteLoading}
+                onClick={() => setCasaToDelete(null)}
+                className="w-full py-3.5 border border-gray-200 rounded-xl text-gray-600 font-bold hover:bg-gray-50 transition-all"
+              >
+                Cancelar
+              </button>
+              <button
+                disabled={deleteLoading}
+                onClick={handleDeleteCasa}
+                className="w-full py-3.5 bg-red-500 text-white rounded-xl font-bold hover:bg-red-600 transition-all flex items-center justify-center gap-2 disabled:opacity-70"
+              >
+                {deleteLoading ? <Loader2 size={16} className="animate-spin" /> : 'Excluir'}
+              </button>
+            </div>
           </div>
         </div>
       )}
