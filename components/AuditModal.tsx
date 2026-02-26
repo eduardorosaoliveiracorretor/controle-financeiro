@@ -62,8 +62,8 @@ const AuditModal: React.FC<AuditModalProps> = ({ despesaId, descricaoOriginal, o
   };
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[80] p-4">
-      <div className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl max-h-[85vh] flex flex-col overflow-hidden animate-in zoom-in duration-200">
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center z-[80] p-0 sm:p-4 overflow-hidden">
+      <div className="mobile-modal bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl w-full max-w-2xl flex flex-col overflow-hidden animate-in slide-in-from-bottom sm:zoom-in duration-200">
         {/* Header */}
         <div className="p-6 border-b flex items-center justify-between bg-gray-50/50">
           <div className="flex items-center gap-3">
@@ -84,7 +84,7 @@ const AuditModal: React.FC<AuditModalProps> = ({ despesaId, descricaoOriginal, o
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-6">
+        <div className="mobile-modal-content flex-1 p-4 sm:p-6 space-y-6">
           {loading ? (
             <div className="flex flex-col items-center justify-center py-20 gap-3">
               <div className="w-10 h-10 border-4 border-orange-100 border-t-orange-500 rounded-full animate-spin"></div>

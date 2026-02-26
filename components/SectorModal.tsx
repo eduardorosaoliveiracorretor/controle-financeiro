@@ -45,15 +45,15 @@ const SectorModal: React.FC<SectorModalProps> = ({ onClose, onSuccess }) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60] p-4">
-      <div className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end sm:items-center justify-center z-[60] p-0 sm:p-4 overflow-hidden">
+      <div className="mobile-modal bg-white rounded-t-3xl sm:rounded-xl shadow-xl w-full max-w-md overflow-hidden">
         <div className="flex items-center justify-between p-4 border-b">
           <h3 className="text-lg font-bold text-gray-800">Novo Setor</h3>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors">
             <X size={24} />
           </button>
         </div>
-        <form onSubmit={handleSubmit} className="p-6">
+        <form onSubmit={handleSubmit} className="mobile-modal-content p-4 sm:p-6">
           <div className="mb-4">
             <label className="block text-sm font-medium text-gray-700 mb-1">Nome do Setor</label>
             <input
@@ -61,23 +61,23 @@ const SectorModal: React.FC<SectorModalProps> = ({ onClose, onSuccess }) => {
               required
               value={nome}
               onChange={(e) => setNome(e.target.value)}
-              className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 outline-none"
+              className="mobile-form-control px-4 py-3 border rounded-lg focus:ring-2 focus:ring-orange-500 outline-none"
               placeholder="Ex: Loteamento Alvorada"
               autoFocus
             />
           </div>
-          <div className="flex justify-end gap-3 mt-6">
+          <div className="flex flex-col sm:flex-row sm:justify-end gap-3 mt-6">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+              className="w-full sm:w-auto px-4 py-3 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
             >
               Cancelar
             </button>
             <button
               type="submit"
               disabled={loading}
-              className="px-4 py-2 bg-orange-500 text-white rounded-lg font-semibold hover:bg-orange-600 transition-colors disabled:opacity-50"
+              className="w-full sm:w-auto px-4 py-3 bg-orange-500 text-white rounded-lg font-semibold hover:bg-orange-600 transition-colors disabled:opacity-50"
             >
               {loading ? 'Salvando...' : 'Cadastrar Setor'}
             </button>

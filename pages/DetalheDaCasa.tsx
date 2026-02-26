@@ -833,8 +833,8 @@ const DetalheDaCasa: React.FC = () => {
 
       {/* Status Update Modal */}
       {showStatusModal && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-md flex items-end sm:items-center justify-center z-[100] p-0 sm:p-4">
-          <div className="bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden animate-in slide-in-from-bottom sm:zoom-in duration-300">
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-md flex items-end sm:items-center justify-center z-[100] p-0 sm:p-4 overflow-hidden">
+          <div className="mobile-modal bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden animate-in slide-in-from-bottom sm:zoom-in duration-300">
             <div className="p-6 border-b flex items-center justify-between">
               <div>
                 <h3 className="font-black text-gray-800 text-lg">Alterar Status</h3>
@@ -847,7 +847,7 @@ const DetalheDaCasa: React.FC = () => {
                 <X size={20} />
               </button>
             </div>
-            <div className="p-4 sm:p-6 space-y-2">
+            <div className="mobile-modal-content p-4 sm:p-6 space-y-2">
               {(['Planejamento', 'Em Obra', 'Pausada', 'Finalizado', 'Vendido'] as Casa['status'][]).map((st) => (
                 <button
                   key={st}
@@ -885,8 +885,8 @@ const DetalheDaCasa: React.FC = () => {
 
       {/* Delete Confirmation Dialog */}
       {expenseToDelete && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center z-[110] p-0 sm:p-4">
-          <div className="bg-white rounded-t-3xl sm:rounded-3xl p-6 w-full max-w-sm shadow-2xl animate-in slide-in-from-bottom sm:zoom-in duration-300">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center z-[110] p-0 sm:p-4 overflow-hidden">
+          <div className="mobile-modal bg-white rounded-t-3xl sm:rounded-3xl p-4 sm:p-6 w-full max-w-sm shadow-2xl animate-in slide-in-from-bottom sm:zoom-in duration-300">
             <div className="w-16 h-16 bg-red-100 text-red-600 rounded-3xl flex items-center justify-center mb-6 mx-auto shadow-sm">
               <Trash2 size={32} />
             </div>

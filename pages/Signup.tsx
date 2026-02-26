@@ -37,8 +37,8 @@ const Signup: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4 py-12">
-      <div className="max-w-md w-full space-y-8 bg-white p-8 md:p-10 rounded-3xl shadow-xl border border-gray-100">
+    <div className="auth-shell flex items-center justify-center bg-gray-50 px-4 py-8 sm:py-12">
+      <div className="max-w-md w-full space-y-8 bg-white p-6 sm:p-8 md:p-10 rounded-3xl shadow-xl border border-gray-100">
         <div className="text-center">
           <div className="flex justify-center mb-6">
             <div className="bg-orange-100 p-4 rounded-2xl shadow-inner">

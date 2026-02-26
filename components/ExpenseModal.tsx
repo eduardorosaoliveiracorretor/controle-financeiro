@@ -136,8 +136,8 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({ casaId, onClose, onSuccess,
   };
 
   return (
-    <div className="fixed inset-0 bg-black/70 backdrop-blur-md flex items-end sm:items-center justify-center z-[120] p-0 sm:p-4">
-      <div className="bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl w-full max-w-xl max-h-[95vh] flex flex-col overflow-hidden animate-in slide-in-from-bottom sm:zoom-in duration-300">
+    <div className="fixed inset-0 bg-black/70 backdrop-blur-md flex items-end sm:items-center justify-center z-[120] p-0 sm:p-4 overflow-hidden">
+      <div className="mobile-modal bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl w-full max-w-xl flex flex-col overflow-hidden animate-in slide-in-from-bottom sm:zoom-in duration-300">
         <div className="flex items-center justify-between p-6 border-b">
           <div>
             <h3 className="text-xl font-black text-gray-800">
@@ -150,7 +150,7 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({ casaId, onClose, onSuccess,
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 overflow-y-auto space-y-6">
+        <form onSubmit={handleSubmit} className="mobile-modal-content p-4 sm:p-6 space-y-6">
           {confirmDuplication && (
             <div className="p-5 bg-orange-50 border-2 border-orange-200 rounded-2xl space-y-4">
               <div className="flex items-start gap-3">
@@ -186,7 +186,7 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({ casaId, onClose, onSuccess,
                 required
                 value={formData.descricao_original}
                 onChange={(e) => setFormData({ ...formData, descricao_original: e.target.value })}
-                className="w-full px-5 py-3.5 bg-gray-50 border-2 border-gray-100 rounded-2xl focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none font-bold text-sm transition-all"
+                className="mobile-form-control px-5 py-3.5 bg-gray-50 border-2 border-gray-100 rounded-2xl focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none font-bold text-sm transition-all"
                 placeholder="Ex: Cimento CP II 50kg"
               />
             </div>
@@ -201,7 +201,7 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({ casaId, onClose, onSuccess,
                   min="0.01"
                   value={formData.quantidade}
                   onChange={(e) => setFormData({ ...formData, quantidade: parseFloat(e.target.value) || 0 })}
-                  className="w-full px-5 py-3.5 bg-gray-50 border-2 border-gray-100 rounded-2xl focus:ring-2 focus:ring-orange-500 outline-none font-bold text-sm transition-all"
+                  className="mobile-form-control px-5 py-3.5 bg-gray-50 border-2 border-gray-100 rounded-2xl focus:ring-2 focus:ring-orange-500 outline-none font-bold text-sm transition-all"
                 />
               </div>
               <div>
@@ -211,7 +211,7 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({ casaId, onClose, onSuccess,
                   required
                   value={displayValorUnitario}
                   onChange={handleCurrencyChange}
-                  className="w-full px-5 py-3.5 bg-gray-50 border-2 border-gray-100 rounded-2xl focus:ring-2 focus:ring-orange-500 outline-none font-bold text-sm transition-all"
+                  className="mobile-form-control px-5 py-3.5 bg-gray-50 border-2 border-gray-100 rounded-2xl focus:ring-2 focus:ring-orange-500 outline-none font-bold text-sm transition-all"
                   placeholder="R$ 0,00"
                 />
               </div>
@@ -233,7 +233,7 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({ casaId, onClose, onSuccess,
                 required
                 value={formData.categoria_id}
                 onChange={(e) => setFormData({ ...formData, categoria_id: e.target.value })}
-                className="w-full px-5 py-3.5 bg-gray-50 border-2 border-gray-100 rounded-2xl focus:ring-2 focus:ring-orange-500 outline-none font-bold text-sm transition-all appearance-none"
+                className="mobile-form-control px-5 py-3.5 bg-gray-50 border-2 border-gray-100 rounded-2xl focus:ring-2 focus:ring-orange-500 outline-none font-bold text-sm transition-all appearance-none"
               >
                 <option value="">Selecione uma categoria...</option>
                 {categorias.map(c => <option key={c.id} value={c.id}>{c.nome}</option>)}
@@ -247,7 +247,7 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({ casaId, onClose, onSuccess,
                   type="url"
                   value={formData.nota_fiscal_url}
                   onChange={(e) => setFormData({ ...formData, nota_fiscal_url: e.target.value })}
-                  className="w-full px-5 py-3.5 bg-gray-50 border-2 border-gray-100 rounded-2xl focus:ring-2 focus:ring-orange-500 outline-none font-bold text-sm transition-all"
+                  className="mobile-form-control px-5 py-3.5 bg-gray-50 border-2 border-gray-100 rounded-2xl focus:ring-2 focus:ring-orange-500 outline-none font-bold text-sm transition-all"
                   placeholder="https://sua-nuvem.com/nota-fiscal.pdf"
                 />
                 <div className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-300 group-focus-within:text-orange-400">
@@ -261,7 +261,7 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({ casaId, onClose, onSuccess,
               <textarea
                 value={formData.observacao}
                 onChange={(e) => setFormData({ ...formData, observacao: e.target.value })}
-                className="w-full px-5 py-4 bg-gray-50 border-2 border-gray-100 rounded-2xl focus:ring-2 focus:ring-orange-500 outline-none resize-none h-28 font-medium text-sm transition-all"
+                className="mobile-form-control px-5 py-4 bg-gray-50 border-2 border-gray-100 rounded-2xl focus:ring-2 focus:ring-orange-500 outline-none resize-none h-28 font-medium text-sm transition-all"
                 placeholder="Ex: Material comprado p/ fundação do muro frontal..."
               />
             </div>

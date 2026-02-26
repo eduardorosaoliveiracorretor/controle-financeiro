@@ -38,7 +38,7 @@ const App: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="app-shell flex items-center justify-center bg-gray-50">
         <div className="flex flex-col items-center gap-4">
           <div className="w-12 h-12 border-4 border-orange-200 border-t-orange-600 rounded-full animate-spin"></div>
           <p className="text-gray-500 font-medium animate-pulse">Carregando...</p>
@@ -49,11 +49,11 @@ const App: React.FC = () => {
 
   return (
     <Router>
-      <div className="min-h-screen flex flex-col lg:flex-row bg-gray-50 text-gray-900">
+      <div className="app-shell flex flex-col lg:flex-row bg-gray-50 text-gray-900">
         {session ? (
           <>
             <Sidebar />
-            <main className="flex-1 lg:ml-64 p-4 lg:p-10 mt-16 lg:mt-0 overflow-y-auto h-screen">
+            <main className="app-scroll-area flex-1 lg:ml-64 p-4 lg:p-10 mt-16 lg:mt-0">
               <div className="max-w-6xl mx-auto">
                 <Routes>
                   <Route path="/" element={<Dashboard />} />
@@ -65,7 +65,7 @@ const App: React.FC = () => {
             </main>
           </>
         ) : (
-          <div className="w-full h-screen overflow-y-auto bg-gray-50">
+          <div className="app-scroll-area w-full bg-gray-50">
             <Routes>
               <Route path="/login" element={<Login />} />
               <Route path="/signup" element={<Signup />} />
