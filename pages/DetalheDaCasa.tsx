@@ -83,19 +83,46 @@ const DetalheDaCasa: React.FC = () => {
 
   const fetchDetails = async () => {
     setLoading(true);
-    const [casaRes, despesasRes] = await Promise.all([
-      supabase.from('casas').select('*, setores(*)').eq('id', id).single(),
-      supabase.from('despesas').select('*, categorias_despesa(*), responsavel_profile:profiles!despesas_responsavel_id_fkey(id, full_name, role)').eq('casa_id', id).order('data_lancamento', { ascending: true })
-    ]);
+
+    const casaRes = await supabase.from('casas').select('*, setores(*)').eq('id', id).single();
 
     if (casaRes.error) {
       console.error(casaRes.error);
       alert('Erro ao carregar unidade.');
       navigate('/unidades');
-    } else {
-      setCasa(casaRes.data);
-      setDespesas(despesasRes.data || []);
+      setLoading(false);
+      return;
     }
+
+    let despesasData: any[] = [];
+
+    const despesasWithProfileRes = await supabase
+      .from('despesas')
+      .select('*, categorias_despesa(*), responsavel_profile:profiles(id, full_name, role)')
+      .eq('casa_id', id)
+      .order('data_lancamento', { ascending: true });
+
+    if (despesasWithProfileRes.error) {
+      console.warn('Falha ao carregar despesas com profile. Aplicando fallback sem join de profile:', despesasWithProfileRes.error.message);
+
+      const despesasFallbackRes = await supabase
+        .from('despesas')
+        .select('*, categorias_despesa(*)')
+        .eq('casa_id', id)
+        .order('data_lancamento', { ascending: true });
+
+      if (despesasFallbackRes.error) {
+        console.error(despesasFallbackRes.error);
+        alert('Erro ao carregar lançamentos da unidade.');
+      } else {
+        despesasData = despesasFallbackRes.data || [];
+      }
+    } else {
+      despesasData = despesasWithProfileRes.data || [];
+    }
+
+    setCasa(casaRes.data);
+    setDespesas(despesasData as Despesa[]);
     setLoading(false);
   };
 
