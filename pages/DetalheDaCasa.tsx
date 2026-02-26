@@ -122,7 +122,7 @@ const DetalheDaCasa: React.FC = () => {
   // Period-based stats filtering
   const filteredDespesas = useMemo(() => {
     return despesas.filter(d => {
-      const date = d.data_lancamento.split('T')[0];
+      const date = (d.data_da_compra || d.data_lancamento.split('T')[0]);
       if (startDate && date < startDate) return false;
       if (endDate && date > endDate) return false;
       return true;
@@ -140,12 +140,17 @@ const DetalheDaCasa: React.FC = () => {
     setEndDate(lastDay);
   };
 
-  const setRange30Days = () => {
+  const setRangeWeek = () => {
     const now = new Date();
-    const last30 = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-    const today = now.toISOString().split('T')[0];
-    setStartDate(last30);
-    setEndDate(today);
+    const day = now.getDay();
+    const diffToMonday = day === 0 ? 6 : day - 1;
+    const monday = new Date(now);
+    monday.setDate(now.getDate() - diffToMonday);
+    const sunday = new Date(monday);
+    sunday.setDate(monday.getDate() + 6);
+
+    setStartDate(monday.toISOString().split('T')[0]);
+    setEndDate(sunday.toISOString().split('T')[0]);
   };
 
   const setRangeYear = () => {
@@ -206,9 +211,16 @@ const DetalheDaCasa: React.FC = () => {
         total_periodo: totalPeriodo,
         lancamentos_count: filteredDespesas.length,
         items: filteredDespesas.map(d => ({
-          d: d.data_lancamento,
-          desc: d.descricao_original,
-          v: d.valor
+          data_lancamento: d.data_lancamento,
+          data_compra: d.data_da_compra || '-',
+          descricao: d.descricao_original,
+          categoria: d.categorias_despesa?.nome || '-',
+          quantidade: d.quantidade,
+          valor_unitario: d.valor_unitario,
+          valor_total: d.valor,
+          observacao: d.observacao || '-',
+          nota_fiscal_url: d.nota_fiscal_url || '-',
+          responsavel_id: d.responsavel_id || d.user_id || '-',
         }))
       };
       const fullHash = await generateIntegrityHash(auditPayload);
@@ -245,24 +257,27 @@ const DetalheDaCasa: React.FC = () => {
       doc.text(`Setor: ${casa.setores?.nome || 'N/A'}`, 20, 70);
       doc.text(`Período: ${startDate ? new Date(startDate).toLocaleDateString('pt-BR') : 'Início'} a ${endDate ? new Date(endDate).toLocaleDateString('pt-BR') : 'Hoje'}`, 20, 75);
 
-      doc.text(`Responsável: ${user.email}`, 110, 65);
+      doc.text(`Usuário autenticado: ${user.email}`, 110, 65);
       doc.text(`Data Emissão: ${timestamp}`, 110, 70);
       doc.text(`Lançamentos: ${filteredDespesas.length} registros`, 110, 75);
 
       // 3. Tabela de Despesas
       const tableData = filteredDespesas.map(d => [
         new Date(d.data_lancamento).toLocaleDateString('pt-BR'),
+        d.data_da_compra ? new Date(d.data_da_compra).toLocaleDateString('pt-BR') : '-',
         d.descricao_original,
         d.quantidade,
         formatCurrency(d.valor_unitario),
         formatCurrency(d.valor),
         d.categorias_despesa?.nome || '-',
+        d.responsavel_id || d.user_id || '-',
+        d.nota_fiscal_url || '-',
         d.observacao || ''
       ]);
 
       autoTable(doc, {
         startY: 95,
-        head: [['Data', 'Descrição', 'Qtd', 'Unit', 'Total', 'Categoria', 'Observação']],
+        head: [['Data Lanç.', 'Data Compra', 'Descrição', 'Qtd', 'Unit', 'Total', 'Categoria', 'Usuário', 'NF', 'Observação']],
         body: tableData,
         headStyles: { 
           fillColor: [249, 115, 22],
@@ -278,13 +293,16 @@ const DetalheDaCasa: React.FC = () => {
           fillColor: [250, 250, 250]
         },
         columnStyles: {
-          0: { cellWidth: 20, halign: 'center' },
-          2: { cellWidth: 10, halign: 'center' },
-          3: { cellWidth: 25, halign: 'right' },
-          4: { cellWidth: 25, halign: 'right' },
-          5: { cellWidth: 25 },
+          0: { cellWidth: 15, halign: 'center' },
+          1: { cellWidth: 15, halign: 'center' },
+          3: { cellWidth: 9, halign: 'center' },
+          4: { cellWidth: 18, halign: 'right' },
+          5: { cellWidth: 18, halign: 'right' },
+          6: { cellWidth: 16 },
+          7: { cellWidth: 19 },
+          8: { cellWidth: 15 },
         },
-        foot: [['', 'TOTAL NO PERÍODO', '', '', formatCurrency(totalPeriodo), '', '']],
+        foot: [['', '', 'TOTAL NO PERÍODO', '', '', formatCurrency(totalPeriodo), '', '', '', '']],
         footStyles: { 
           fillColor: [255, 255, 255], 
           textColor: [249, 115, 22], 
@@ -523,9 +541,9 @@ const DetalheDaCasa: React.FC = () => {
           </div>
 
           <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2">
-            <button onClick={setRangeMonth} className="text-[10px] px-3 py-2 bg-gray-50 hover:bg-orange-50 hover:text-orange-600 rounded-xl font-bold text-gray-500 transition-all border border-gray-100">Mês Atual</button>
-            <button onClick={setRange30Days} className="text-[10px] px-3 py-2 bg-gray-50 hover:bg-orange-50 hover:text-orange-600 rounded-xl font-bold text-gray-500 transition-all border border-gray-100">30 Dias</button>
-            <button onClick={setRangeYear} className="text-[10px] px-3 py-2 bg-gray-50 hover:bg-orange-50 hover:text-orange-600 rounded-xl font-bold text-gray-500 transition-all border border-gray-100">Este Ano</button>
+            <button onClick={setRangeWeek} className="text-[10px] px-3 py-2 bg-gray-50 hover:bg-orange-50 hover:text-orange-600 rounded-xl font-bold text-gray-500 transition-all border border-gray-100">Semanal</button>
+            <button onClick={setRangeMonth} className="text-[10px] px-3 py-2 bg-gray-50 hover:bg-orange-50 hover:text-orange-600 rounded-xl font-bold text-gray-500 transition-all border border-gray-100">Mensal</button>
+            <button onClick={setRangeYear} className="text-[10px] px-3 py-2 bg-gray-50 hover:bg-orange-50 hover:text-orange-600 rounded-xl font-bold text-gray-500 transition-all border border-gray-100">Anual</button>
             <button onClick={clearRange} className="text-[10px] px-3 py-2 bg-gray-50 hover:bg-red-50 hover:text-red-600 rounded-xl font-bold text-gray-400 transition-all border border-gray-100">Todos</button>
           </div>
         </div>
