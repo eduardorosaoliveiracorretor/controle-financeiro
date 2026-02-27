@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { supabase } from './lib/supabaseClient';
@@ -8,13 +7,13 @@ import Unidades from './pages/Unidades';
 import DetalheDaCasa from './pages/DetalheDaCasa';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
+import Usuarios from './pages/Usuarios';
 
 const App: React.FC = () => {
   const [session, setSession] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Initial session check
     const initAuth = async () => {
       try {
         const { data: { session: initialSession } } = await supabase.auth.getSession();
@@ -28,7 +27,6 @@ const App: React.FC = () => {
 
     initAuth();
 
-    // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
     });
@@ -59,6 +57,7 @@ const App: React.FC = () => {
                   <Route path="/" element={<Dashboard />} />
                   <Route path="/unidades" element={<Unidades />} />
                   <Route path="/unidade/:id" element={<DetalheDaCasa />} />
+                  <Route path="/usuarios" element={<Usuarios />} />
                   <Route path="*" element={<Navigate to="/" />} />
                 </Routes>
               </div>
