@@ -1,7 +1,6 @@
-
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabaseClient';
-import { X, History, ArrowRight, User, Clock, Tag, Trash2 } from 'lucide-react';
+import { X, History, ArrowRight, User, Clock, Tag, Trash2, ShieldCheck } from 'lucide-react';
 import { AuditRecord } from '../types';
 import { formatCurrency } from '../utils/normalization';
 import { BRANDING } from '../config/branding';
@@ -15,6 +14,8 @@ interface AuditModalProps {
 const AuditModal: React.FC<AuditModalProps> = ({ despesaId, descricaoOriginal, onClose }) => {
   const [records, setRecords] = useState<AuditRecord[]>([]);
   const [loading, setLoading] = useState(true);
+  // Mapa de user_id -> { full_name, role }
+  const [userMap, setUserMap] = useState<Record<string, { full_name: string; role: string }>>({});
 
   useEffect(() => {
     const fetchAudit = async () => {
@@ -27,7 +28,24 @@ const AuditModal: React.FC<AuditModalProps> = ({ despesaId, descricaoOriginal, o
           .order('changed_at', { ascending: false });
 
         if (error) throw error;
-        setRecords(data || []);
+
+        const auditRecords: AuditRecord[] = data || [];
+        setRecords(auditRecords);
+
+        // Busca os perfis de todos os usuários que aparecem no audit
+        const userIds = [...new Set(auditRecords.map(r => r.changed_by).filter(Boolean))];
+        if (userIds.length > 0) {
+          const { data: profiles } = await supabase
+            .from('profiles')
+            .select('id, full_name, role')
+            .in('id', userIds);
+
+          if (profiles) {
+            const map: Record<string, { full_name: string; role: string }> = {};
+            profiles.forEach(p => { map[p.id] = { full_name: p.full_name, role: p.role }; });
+            setUserMap(map);
+          }
+        }
       } catch (err: any) {
         console.error('Erro ao carregar auditoria:', err);
         alert('Não foi possível carregar o histórico de alterações.');
@@ -39,10 +57,19 @@ const AuditModal: React.FC<AuditModalProps> = ({ despesaId, descricaoOriginal, o
     fetchAudit();
   }, [despesaId]);
 
+  const getUserLabel = (userId: string) => {
+    const profile = userMap[userId];
+    if (!profile) return userId?.substring(0, 8) + '...';
+    return profile.full_name;
+  };
+
+  const getUserRole = (userId: string) => {
+    return userMap[userId]?.role || null;
+  };
+
   const renderDiff = (oldData: any, newData: any, field: string, label: string, isCurrency = false) => {
     const oldVal = oldData ? oldData[field] : null;
     const newVal = newData ? newData[field] : null;
-
     if (oldVal === newVal) return null;
 
     return (
@@ -64,6 +91,7 @@ const AuditModal: React.FC<AuditModalProps> = ({ despesaId, descricaoOriginal, o
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[80] p-4">
       <div className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl max-h-[85vh] flex flex-col overflow-hidden animate-in zoom-in duration-200">
+
         {/* Header */}
         <div className="p-6 border-b flex items-center justify-between bg-gray-50/50">
           <div className="flex items-center gap-3">
@@ -75,8 +103,8 @@ const AuditModal: React.FC<AuditModalProps> = ({ despesaId, descricaoOriginal, o
               <p className="text-xs text-gray-500 font-medium truncate max-w-[300px]">{descricaoOriginal}</p>
             </div>
           </div>
-          <button 
-            onClick={onClose} 
+          <button
+            onClick={onClose}
             className="p-2 hover:bg-white rounded-full text-gray-400 hover:text-gray-600 transition-all border border-transparent hover:border-gray-100"
           >
             <X size={24} />
@@ -102,18 +130,18 @@ const AuditModal: React.FC<AuditModalProps> = ({ despesaId, descricaoOriginal, o
               <div key={record.id} className="relative pl-8 border-l-2 border-gray-100 pb-2 last:pb-0">
                 {/* Dot indicator */}
                 <div className={`absolute -left-[9px] top-1 w-4 h-4 rounded-full border-4 border-white shadow-sm ${
-                  record.action === 'INSERT' ? 'bg-green-500' : 
+                  record.action === 'INSERT' ? 'bg-green-500' :
                   record.action === 'UPDATE' ? 'bg-blue-500' : 'bg-red-500'
                 }`}></div>
 
                 <div className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm hover:shadow-md transition-shadow">
-                  <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
                     <div className="flex items-center gap-3">
                       <span className={`text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded-lg ${
-                        record.action === 'INSERT' ? 'bg-green-100 text-green-700' : 
+                        record.action === 'INSERT' ? 'bg-green-100 text-green-700' :
                         record.action === 'UPDATE' ? 'bg-blue-100 text-blue-700' : 'bg-red-100 text-red-700'
                       }`}>
-                        {record.action === 'INSERT' ? 'Criação' : 
+                        {record.action === 'INSERT' ? 'Criação' :
                          record.action === 'UPDATE' ? 'Edição' : 'Exclusão'}
                       </span>
                       <div className="flex items-center gap-1.5 text-xs text-gray-400 font-medium">
@@ -121,9 +149,23 @@ const AuditModal: React.FC<AuditModalProps> = ({ despesaId, descricaoOriginal, o
                         {new Date(record.changed_at).toLocaleString('pt-BR')}
                       </div>
                     </div>
-                    <div className="flex items-center gap-1.5 text-xs text-gray-500 font-bold bg-gray-50 px-3 py-1 rounded-full">
-                      <User size={14} className="text-gray-400" />
-                      {record.changed_by || 'Sistema'}
+
+                    {/* Usuário responsável pela ação */}
+                    <div className="flex items-center gap-1.5 text-xs text-gray-700 font-bold bg-gray-50 border border-gray-100 px-3 py-1.5 rounded-full">
+                      {getUserRole(record.changed_by) === 'master'
+                        ? <ShieldCheck size={13} className="text-orange-500" />
+                        : <User size={13} className="text-gray-400" />
+                      }
+                      {getUserLabel(record.changed_by)}
+                      {getUserRole(record.changed_by) && (
+                        <span className={`ml-1 text-[9px] uppercase font-black px-1.5 py-0.5 rounded-full ${
+                          getUserRole(record.changed_by) === 'master'
+                            ? 'bg-orange-100 text-orange-600'
+                            : 'bg-gray-100 text-gray-500'
+                        }`}>
+                          {getUserRole(record.changed_by)}
+                        </span>
+                      )}
                     </div>
                   </div>
 
@@ -162,7 +204,7 @@ const AuditModal: React.FC<AuditModalProps> = ({ despesaId, descricaoOriginal, o
         {/* Footer */}
         <div className="p-4 border-t bg-gray-50/50 flex flex-col gap-1 items-center">
           <p className="text-[10px] text-gray-400 font-medium">Sistema {BRANDING.appName}</p>
-          <button 
+          <button
             onClick={onClose}
             className="px-6 py-2 bg-white border border-gray-200 text-gray-700 rounded-xl font-bold hover:bg-gray-100 transition-all text-sm shadow-sm"
           >
