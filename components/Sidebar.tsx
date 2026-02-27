@@ -1,14 +1,15 @@
-
 import React, { useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { LayoutDashboard, Home, CircleDollarSign, Menu, X, LogOut } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { BRANDING } from '../config/branding';
+import { useAuth } from '../contexts/AuthContext';
 
 const Sidebar: React.FC = () => {
   const [isOpen, setIsOpen] = React.useState(false);
   const location = useLocation();
   const navigate = useNavigate();
+  const { profile, user } = useAuth();
 
   const links = [
     { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
@@ -16,6 +17,9 @@ const Sidebar: React.FC = () => {
   ];
 
   const isActive = (path: string) => location.pathname === path;
+
+  const displayRole = profile?.role === 'master' ? 'MASTER' : 'CONTADOR';
+  const displayName = profile?.full_name || user?.email || 'Usuário';
 
   // Close sidebar when path changes (mobile)
   useEffect(() => {
@@ -75,6 +79,12 @@ const Sidebar: React.FC = () => {
             >
               <X size={20} />
             </button>
+          </div>
+
+          <div className="mb-6 px-4 py-3 rounded-2xl bg-orange-50 border border-orange-100">
+            <p className="text-xs font-bold text-orange-400 uppercase tracking-widest">Usuário Logado</p>
+            <p className="text-sm font-semibold text-gray-700 truncate mt-1">{displayName}</p>
+            <p className="text-xs font-black text-orange-600 mt-1 tracking-wider">{displayRole}</p>
           </div>
 
           <nav className="space-y-1.5">
