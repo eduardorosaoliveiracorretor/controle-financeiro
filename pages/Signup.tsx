@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
-import { CircleDollarSign, UserPlus, Mail, Lock, Loader2 } from 'lucide-react';
+import { TrendingUp, UserPlus, Mail, Lock, Loader2, User } from 'lucide-react';
 import { BRANDING } from '../config/branding';
 
 const Signup: React.FC = () => {
@@ -10,109 +10,161 @@ const Signup: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [fullName, setFullName] = useState('');
+  const [error, setError] = useState('');
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     if (loading) return;
-    
+    setError('');
     setLoading(true);
     try {
-      const { error } = await supabase.auth.signUp({
-        email,
-        password,
-      });
-
+      const { error } = await supabase.auth.signUp({ email, password });
       if (error) {
-        alert(`Erro ao cadastrar: ${error.message}`);
+        setError(error.message);
       } else {
-        alert('Cadastro realizado com sucesso! Verifique seu e-mail para confirmação se necessário.');
+        alert('Cadastro realizado! Verifique seu e-mail para confirmar.');
         navigate('/login');
       }
-    } catch (err: any) {
-      console.error(err);
-      alert("Erro ao realizar cadastro.");
+    } catch {
+      setError('Erro ao realizar cadastro. Tente novamente.');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4 py-12">
-      <div className="max-w-md w-full space-y-8 bg-white p-8 md:p-10 rounded-3xl shadow-xl border border-gray-100">
-        <div className="text-center">
-          <div className="flex justify-center mb-6">
-            <div className="bg-orange-100 p-4 rounded-2xl shadow-inner">
-              <CircleDollarSign size={48} className="text-orange-600" />
-            </div>
+    <div className="min-h-screen flex flex-col lg:flex-row">
+
+      {/* ── PAINEL ESQUERDO — dark branding ──────────────────────── */}
+      <div className="hidden lg:flex lg:w-1/2 xl:w-[45%] bg-slate-900 flex-col justify-between p-12 relative overflow-hidden">
+        <div className="absolute inset-0 opacity-[0.04]"
+          style={{ backgroundImage: 'linear-gradient(#fff 1px,transparent 1px),linear-gradient(90deg,#fff 1px,transparent 1px)', backgroundSize: '48px 48px' }} />
+        <div className="absolute -top-32 -left-32 w-96 h-96 bg-orange-500 rounded-full blur-[140px] opacity-20 pointer-events-none" />
+
+        <div className="relative z-10 flex items-center gap-3">
+          <div className="w-10 h-10 bg-orange-500 rounded-xl flex items-center justify-center shadow-xl shadow-orange-500/40">
+            <TrendingUp size={20} className="text-white" />
           </div>
-          <h2 className="text-2xl font-extrabold text-gray-900 leading-tight">Nova Conta</h2>
-          <p className="mt-2 text-sm text-gray-500">
-            Cadastre-se no sistema da {BRANDING.companyName}
+          <div>
+            <p className="text-white font-black text-base leading-none">{BRANDING.shortName}</p>
+            <p className="text-slate-500 text-[10px] font-semibold uppercase tracking-widest mt-0.5">{BRANDING.companyName}</p>
+          </div>
+        </div>
+
+        <div className="relative z-10 space-y-4">
+          <h1 className="text-4xl font-black text-white leading-tight tracking-tight">
+            Crie sua conta<br />
+            e comece a<br />
+            <span className="text-orange-500">controlar hoje.</span>
+          </h1>
+          <p className="text-slate-400 text-base font-medium leading-relaxed max-w-sm">
+            Em poucos segundos você terá acesso completo ao sistema de gestão financeira.
           </p>
         </div>
 
-        <form className="mt-8 space-y-5" onSubmit={handleSignup}>
-          <div>
-            <label className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1.5 block">E-mail Corporativo</label>
-            <div className="relative group">
-              <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-gray-400 group-focus-within:text-orange-500 transition-colors">
-                <Mail size={18} />
-              </span>
-              <input
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="block w-full pl-11 pr-4 py-3 border border-gray-200 rounded-xl leading-5 bg-gray-50 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:bg-white focus:border-transparent transition-all sm:text-sm"
-                placeholder="seu@email.com"
-              />
+        <p className="relative z-10 text-slate-600 text-xs font-medium">
+          © {new Date().getFullYear()} {BRANDING.companyName}
+        </p>
+      </div>
+
+      {/* ── PAINEL DIREITO — formulário ──────────────────────────── */}
+      <div className="flex-1 flex flex-col bg-slate-50 min-h-screen lg:min-h-0">
+
+        {/* Mobile header */}
+        <div className="lg:hidden flex items-center gap-3 px-6 py-5 bg-slate-900">
+          <div className="w-8 h-8 bg-orange-500 rounded-xl flex items-center justify-center shadow-lg shadow-orange-500/40">
+            <TrendingUp size={16} className="text-white" />
+          </div>
+          <p className="text-white font-black text-sm">{BRANDING.shortName}</p>
+        </div>
+
+        <div className="flex-1 flex items-center justify-center p-6 lg:p-12">
+          <div className="w-full max-w-sm">
+
+            <div className="mb-8">
+              <h2 className="text-2xl font-black text-slate-900 tracking-tight">Criar nova conta</h2>
+              <p className="text-slate-500 text-sm mt-1 font-medium">Preencha os dados para se cadastrar.</p>
             </div>
-          </div>
 
-          <div>
-            <label className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1.5 block">Escolha uma Senha</label>
-            <div className="relative group">
-              <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-gray-400 group-focus-within:text-orange-500 transition-colors">
-                <Lock size={18} />
-              </span>
-              <input
-                type="password"
-                required
-                minLength={6}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="block w-full pl-11 pr-4 py-3 border border-gray-200 rounded-xl leading-5 bg-gray-50 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:bg-white focus:border-transparent transition-all sm:text-sm"
-                placeholder="••••••••"
-              />
-            </div>
-            <p className="mt-1 text-[10px] text-gray-400 italic">* Mínimo de 6 caracteres</p>
-          </div>
+            {error && (
+              <div className="mb-5 px-4 py-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700 font-semibold">
+                {error}
+              </div>
+            )}
 
-          <div className="pt-2">
-            <button
-              type="submit"
-              disabled={loading}
-              className="group relative w-full flex justify-center py-4 px-4 border border-transparent text-sm font-bold rounded-xl text-white bg-orange-600 hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 transition-all disabled:opacity-70 shadow-lg shadow-orange-100"
-            >
-              {loading ? (
-                <Loader2 className="animate-spin h-5 w-5" />
-              ) : (
-                <>
-                  <UserPlus className="h-5 w-5 absolute left-4 text-orange-400 group-hover:text-orange-300 transition-colors" />
-                  <span>Cadastrar Agora</span>
-                </>
-              )}
-            </button>
-          </div>
-        </form>
+            <form onSubmit={handleSignup} className="space-y-4">
+              {/* Nome */}
+              <div>
+                <label className="block text-xs font-black text-slate-500 uppercase tracking-widest mb-1.5">Nome completo</label>
+                <div className="relative">
+                  <User size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <input
+                    type="text"
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    placeholder="Seu nome"
+                    className="w-full pl-10 pr-4 py-3.5 bg-white border border-slate-200 rounded-xl text-sm font-medium text-slate-800 placeholder:text-slate-300 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
+                  />
+                </div>
+              </div>
 
-        <div className="text-center mt-6">
-          <p className="text-sm text-gray-600">
-            Já possui uma conta?{' '}
-            <Link to="/login" className="font-bold text-orange-600 hover:text-orange-500 transition-colors">
-              Faça login aqui
-            </Link>
-          </p>
+              {/* Email */}
+              <div>
+                <label className="block text-xs font-black text-slate-500 uppercase tracking-widest mb-1.5">E-mail</label>
+                <div className="relative">
+                  <Mail size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <input
+                    type="email"
+                    required
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="seu@email.com"
+                    className="w-full pl-10 pr-4 py-3.5 bg-white border border-slate-200 rounded-xl text-sm font-medium text-slate-800 placeholder:text-slate-300 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
+                  />
+                </div>
+              </div>
+
+              {/* Senha */}
+              <div>
+                <label className="block text-xs font-black text-slate-500 uppercase tracking-widest mb-1.5">Senha</label>
+                <div className="relative">
+                  <Lock size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <input
+                    type="password"
+                    required
+                    minLength={6}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Mínimo 6 caracteres"
+                    className="w-full pl-10 pr-4 py-3.5 bg-white border border-slate-200 rounded-xl text-sm font-medium text-slate-800 placeholder:text-slate-300 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
+                  />
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full flex items-center justify-center gap-2.5 py-4 mt-2 bg-orange-500 hover:bg-orange-600 active:scale-[0.98] text-white font-black text-sm rounded-xl transition-all shadow-lg shadow-orange-500/25 disabled:opacity-60"
+              >
+                {loading ? (
+                  <Loader2 size={18} className="animate-spin" />
+                ) : (
+                  <>
+                    <UserPlus size={17} />
+                    Criar minha conta
+                  </>
+                )}
+              </button>
+            </form>
+
+            <p className="mt-6 text-center text-sm text-slate-500 font-medium">
+              Já possui conta?{' '}
+              <Link to="/login" className="text-orange-600 font-black hover:text-orange-500 transition-colors">
+                Fazer login
+              </Link>
+            </p>
+          </div>
         </div>
       </div>
     </div>

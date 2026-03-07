@@ -47,11 +47,11 @@ const App: React.FC = () => {
 
   return (
     <Router>
-      <div className="min-h-screen flex flex-col lg:flex-row bg-gray-50 text-gray-900">
+      <div className="min-h-screen flex flex-col lg:flex-row bg-slate-50 text-gray-900">
         {session ? (
           <>
             <Sidebar />
-            <main className="flex-1 lg:ml-64 p-4 lg:p-10 mt-16 lg:mt-0 overflow-y-auto h-screen">
+            <main className="flex-1 lg:ml-64 p-4 lg:p-8 mt-14 lg:mt-0 pb-24 lg:pb-8 overflow-y-auto h-screen">
               <div className="max-w-6xl mx-auto">
                 <Routes>
                   <Route path="/" element={<Dashboard />} />
