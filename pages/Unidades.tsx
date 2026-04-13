@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { Casa, Setor } from '../types';
-import { Plus, MapPin, Calendar, ChevronRight, Home, Settings2, Loader2, X, CheckCircle2, Trash2, AlertTriangle } from 'lucide-react';
+import { Plus, MapPin, Calendar, ChevronRight, Home, Settings2, Loader2, X, CheckCircle2, Trash2, AlertTriangle, Pencil } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import SectorModal from '../components/SectorModal';
 import { formatCurrency } from '../utils/normalization';
@@ -18,6 +18,9 @@ const Unidades: React.FC = () => {
   // Status edit state
   const [statusEditingCasa, setStatusEditingCasa] = useState<Casa | null>(null);
   const [statusLoading, setStatusLoading] = useState(false);
+
+  // Edit state
+  const [editingCasa, setEditingCasa] = useState<Casa | null>(null);
 
   // Delete state
   const [deletingCasa, setDeletingCasa] = useState<Casa | null>(null);
@@ -54,26 +57,60 @@ const Unidades: React.FC = () => {
     setLoading(false);
   };
 
+  const handleOpenEdit = (casa: Casa) => {
+    setEditingCasa(casa);
+    setFormData({
+      nome_casa: casa.nome_casa,
+      setor_id: casa.setor_id,
+      orcamento_previsto: String(casa.orcamento_previsto),
+      data_inicio_obra: casa.data_inicio_obra,
+      status: casa.status
+    });
+    setShowModal(true);
+  };
+
+  const handleCloseModal = () => {
+    setShowModal(false);
+    setEditingCasa(null);
+    setFormData({ nome_casa: '', setor_id: '', orcamento_previsto: '', data_inicio_obra: '', status: 'Planejamento' });
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { alert('Você precisa estar logado.'); return; }
 
-    const { error } = await supabase.from('casas').insert([{
-      user_id: user.id,
-      nome_casa: formData.nome_casa,
-      setor_id: formData.setor_id,
-      orcamento_previsto: parseFloat(formData.orcamento_previsto),
-      data_inicio_obra: formData.data_inicio_obra,
-      status: formData.status
-    }]);
+    if (editingCasa) {
+      const { error } = await supabase.from('casas').update({
+        nome_casa: formData.nome_casa,
+        setor_id: formData.setor_id,
+        orcamento_previsto: parseFloat(formData.orcamento_previsto),
+        data_inicio_obra: formData.data_inicio_obra,
+        status: formData.status
+      }).eq('id', editingCasa.id);
 
-    if (error) {
-      alert(`Erro ao cadastrar unidade: ${error.message}`);
+      if (error) {
+        alert(`Erro ao atualizar unidade: ${error.message}`);
+      } else {
+        handleCloseModal();
+        fetchData();
+      }
     } else {
-      setShowModal(false);
-      fetchData();
-      setFormData({ nome_casa: '', setor_id: '', orcamento_previsto: '', data_inicio_obra: '', status: 'Planejamento' });
+      const { error } = await supabase.from('casas').insert([{
+        user_id: user.id,
+        nome_casa: formData.nome_casa,
+        setor_id: formData.setor_id,
+        orcamento_previsto: parseFloat(formData.orcamento_previsto),
+        data_inicio_obra: formData.data_inicio_obra,
+        status: formData.status
+      }]);
+
+      if (error) {
+        alert(`Erro ao cadastrar unidade: ${error.message}`);
+      } else {
+        handleCloseModal();
+        fetchData();
+      }
     }
   };
 
@@ -156,15 +193,24 @@ const Unidades: React.FC = () => {
                     >
                       {casa.status} <Settings2 size={10} />
                     </button>
-                    {/* Botão excluir — só para o dono */}
+                    {/* Botões editar e excluir — só para o dono */}
                     {casa.user_id === currentUserId && (
-                      <button
-                        onClick={(e) => { e.stopPropagation(); setDeletingCasa(casa); }}
-                        className="p-1.5 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
-                        title="Excluir unidade"
-                      >
-                        <Trash2 size={14} />
-                      </button>
+                      <>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); handleOpenEdit(casa); }}
+                          className="p-1.5 text-gray-300 hover:text-orange-500 hover:bg-orange-50 rounded-lg transition-all"
+                          title="Editar unidade"
+                        >
+                          <Pencil size={14} />
+                        </button>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); setDeletingCasa(casa); }}
+                          className="p-1.5 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
+                          title="Excluir unidade"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </>
                     )}
                   </div>
                 </div>
@@ -256,8 +302,8 @@ const Unidades: React.FC = () => {
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[120] p-4 overflow-hidden">
           <div className="bg-white rounded-2xl md:rounded-3xl shadow-2xl w-full max-w-[min(94vw,520px)] md:max-w-2xl max-h-[92vh] flex flex-col overflow-hidden animate-in zoom-in duration-200">
             <div className="flex items-center justify-between p-4 md:p-6 border-b shrink-0 bg-white">
-              <h3 className="text-lg md:text-xl font-bold text-gray-800 truncate">Cadastrar Nova Unidade</h3>
-              <button onClick={() => setShowModal(false)} className="p-2 text-gray-400 hover:text-gray-600 transition-colors"><X size={24} /></button>
+              <h3 className="text-lg md:text-xl font-bold text-gray-800 truncate">{editingCasa ? 'Editar Unidade' : 'Cadastrar Nova Unidade'}</h3>
+              <button onClick={handleCloseModal} className="p-2 text-gray-400 hover:text-gray-600 transition-colors"><X size={24} /></button>
             </div>
 
             <form onSubmit={handleSubmit} className="p-4 md:p-8 overflow-y-auto flex-1">
@@ -300,8 +346,8 @@ const Unidades: React.FC = () => {
               </div>
 
               <div className="mt-8 flex flex-col md:flex-row gap-3">
-                <button type="button" onClick={() => setShowModal(false)} className="w-full md:flex-1 px-6 py-3.5 border border-gray-200 text-gray-600 rounded-xl font-bold hover:bg-gray-50 transition-colors text-sm order-2 md:order-1">Cancelar</button>
-                <button type="submit" className="w-full md:flex-1 px-6 py-3.5 bg-orange-500 text-white rounded-xl font-bold hover:bg-orange-600 transition-all shadow-lg shadow-orange-100 text-sm order-1 md:order-2">Criar Unidade</button>
+                <button type="button" onClick={handleCloseModal} className="w-full md:flex-1 px-6 py-3.5 border border-gray-200 text-gray-600 rounded-xl font-bold hover:bg-gray-50 transition-colors text-sm order-2 md:order-1">Cancelar</button>
+                <button type="submit" className="w-full md:flex-1 px-6 py-3.5 bg-orange-500 text-white rounded-xl font-bold hover:bg-orange-600 transition-all shadow-lg shadow-orange-100 text-sm order-1 md:order-2">{editingCasa ? 'Salvar Alterações' : 'Criar Unidade'}</button>
               </div>
             </form>
           </div>
